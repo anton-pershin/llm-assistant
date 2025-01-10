@@ -1,0 +1,8 @@
+project_path: /Users/tony/reps/github/anton-pershin/llm-assistant # /path/to/this/repo
+result_dir: ${user_settings.project_path}
+hydra_root: ${user_settings.result_dir}/hydra
+hydra_dir: ${user_settings.hydra_root}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+management_note_path: /Users/tony/reps/github/anton-pershin/management-notes
+
+llm_server_url: http://localhost:9191/v1/chat/completions
+

@@ -1,0 +1,6 @@
+defaults:
+  - _self_
+  - override job_logging: base
+
+run:
+  dir: ${hydra_dir}

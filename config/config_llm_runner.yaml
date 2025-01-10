@@ -1,0 +1,18 @@
+defaults:
+  - _self_
+  - user_settings: user_settings
+  - hydra: base
+  - prompts: base
+
+project_path: ${user_settings.project_path}
+result_dir: ${user_settings.hydra_dir}
+hydra_root: ${user_settings.hydra_root}
+hydra_dir: ${user_settings.hydra_dir}
+management_note_path: ${user_settings.management_note_path}
+llm_server_url: ${user_settings.llm_server_url}
+
+student_project_path: ${user_settings.management_note_path}/university/student_projects
+morning_routine_path: ${user_settings.management_note_path}/morning_routine.md
+relax_path: ${user_settings.management_note_path}/relax.md
+
+stop_word: stop
