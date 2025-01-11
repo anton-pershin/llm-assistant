@@ -8,30 +8,28 @@ from llmass.interaction import (
 from llmass.utils.common import (
     get_markdown_filenames,
     transform_filename_to_capitalized_name,
+    prompt_until_satisfied,
 )
 
-def warmup(cfg: DictConfig) -> None:
-    # Read the routine md file
-    with open(cfg.routine_path, "r") as f:
-        md_file_content = f.read()
-        single_message_non_dialogue_interaction_with_llm(
-            llm_server_url=cfg.llm_server_url,
-            system_prompt=cfg.prompts.warmup.system_prompt, 
-            user_prompt_prefix=cfg.prompts.warmup.user_prompt_prefix,
-            user_prompt_question=cfg.prompts.warmup.user_prompt_question_at_startup,
-            user_prompt_suffix=cfg.prompts.warmup.user_prompt_suffix,
-            user_prompt_extra_content=md_file_content,
-            stop_word=cfg.stop_word,
-        )
 
-        recurrent_non_dialogue_interaction_with_llm(
-            llm_server_url=cfg.llm_server_url,
-            system_prompt=cfg.prompts.warmup.system_prompt, 
-            user_prompt_prefix=cfg.prompts.warmup.user_prompt_prefix,
-            user_prompt_suffix=cfg.prompts.warmup.user_prompt_suffix,
-            user_prompt_extra_content=md_file_content,
-            stop_word=cfg.stop_word,
-        )
+def warmup(cfg: DictConfig) -> None:
+    _run_interaction_based_on_single_md_file(
+        md_path=cfg.routine_path,
+        prompts=cfg.prompts.warmup,
+        llm_server_url=cfg.llm_server_url,
+        stop_word=cfg.stop_word,
+        ask_startup_question=True,
+    )
+
+
+def relax(cfg: DictConfig) -> None:
+    _run_interaction_based_on_single_md_file(
+        md_path=cfg.relax_path,
+        prompts=cfg.prompts.relax,
+        llm_server_url=cfg.llm_server_url,
+        stop_word=cfg.stop_word,
+        ask_startup_question=False,
+    )
 
 
 def projects(cfg: DictConfig) -> None:
@@ -72,3 +70,33 @@ def projects(cfg: DictConfig) -> None:
                 user_prompt_extra_content=md_file_content,
                 stop_word=cfg.stop_word,
             )
+
+def _run_interaction_based_on_single_md_file(
+    md_path: str,
+    prompts: DictConfig,
+    llm_server_url: str,
+    stop_word: str,
+    ask_startup_question: bool,
+) -> None:
+    with open(md_path, "r") as f:
+        md_file_content = f.read()
+        if ask_startup_question:
+            single_message_non_dialogue_interaction_with_llm(
+                llm_server_url=llm_server_url,
+                system_prompt=prompts.system_prompt, 
+                user_prompt_prefix=prompts.user_prompt_prefix,
+                user_prompt_question=prompts.user_prompt_question_at_startup,
+                user_prompt_suffix=prompts.user_prompt_suffix,
+                user_prompt_extra_content=md_file_content,
+                stop_word=stop_word,
+            )
+
+        recurrent_non_dialogue_interaction_with_llm(
+            llm_server_url=llm_server_url,
+            system_prompt=prompts.system_prompt, 
+            user_prompt_prefix=prompts.user_prompt_prefix,
+            user_prompt_suffix=prompts.user_prompt_suffix,
+            user_prompt_extra_content=md_file_content,
+            stop_word=stop_word,
+        )
+

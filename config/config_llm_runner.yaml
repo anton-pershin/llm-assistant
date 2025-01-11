@@ -3,6 +3,7 @@ defaults:
   - user_settings: user_settings
   - hydra: base
   - prompts: base
+  - mode: warmup
 
 project_path: ${user_settings.project_path}
 result_dir: ${user_settings.hydra_dir}

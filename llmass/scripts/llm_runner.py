@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 import hydra
+from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from llmass.modes import warmup, projects
@@ -14,9 +15,9 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 
 def llm_runner(cfg: DictConfig) -> None:
-    warmup(cfg)
-    # projects(cfg)
+    instantiate(cfg.mode, cfg)
     
+
 if __name__ == "__main__":
     hydra.main(
         config_path=str(get_config_path()),

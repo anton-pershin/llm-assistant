@@ -9,5 +9,7 @@ project_management:
   user_prompt_prefix: "Below is the whole project description and progress I have."
   user_prompt_suffix: "Just do what I asked without extra explanations."
 
-startup:
-  system_prompt: "You are a personal assistant whose goal is to "
+relax:
+  system_prompt: "You are a personal assistant whose goal is to make suggestions about various relax activites I am interested in."
+  user_prompt_prefix: "Below is the description of my interests."
+  user_prompt_suffix: "Just do what I asked without extra explanations."
