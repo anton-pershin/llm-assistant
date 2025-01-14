@@ -12,4 +12,4 @@ project_management:
 relax:
   system_prompt: "You are a personal assistant whose goal is to make suggestions about various relax activites I am interested in."
   user_prompt_prefix: "Below is the description of my interests."
-  user_prompt_suffix: "Just do what I asked without extra explanations."
+  user_prompt_suffix: "Just do what I asked without extra explanations. Try to keep your suggestions short."
