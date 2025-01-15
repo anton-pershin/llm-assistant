@@ -32,7 +32,7 @@ def relax(cfg: DictConfig) -> None:
     )
 
 
-def projects(cfg: DictConfig) -> None:
+def projects(project_path: str, cfg: DictConfig) -> None:
     # Collect all the project files in the project dir
     project_md_files = []
     excluded_filenames = (
@@ -42,23 +42,24 @@ def projects(cfg: DictConfig) -> None:
     project_md_files = get_markdown_filenames(p=project_path, excluded_filenames=excluded_filenames)
 
     print("===="*8)
-    print("Student projects".upper())
+    print("Projects".upper())
     print("===="*8 + "\n")
 
-    print("Students:")
-    for md_file in project_md_files:
+    print("Project list:")
+    for i, md_file in enumerate(project_md_files):
         student_name = transform_filename_to_capitalized_name(md_file)
-        print("\t" + student_name + f" ({md_file})")
+        print(f"\t{i + 1}  " + student_name + f" ({md_file})")
     print()
 
     while True:
-        md_file = prompt_until_satisfied(
-            prompt_msg="Choose the file",
+        md_file_i = prompt_until_satisfied(
+            prompt_msg="Choose the file by its number",
             input_prompt="> ",
             msg_if_satisfied="Running LLM conversation regarding this project",
-            msg_if_not_satisfied="Wrong name. Try again",
-            condition=lambda s: s in project_md_files,
+            msg_if_not_satisfied="Wrong number. Try again",
+            condition=lambda i_as_str: 1 <= int(i_as_str) <= len(project_md_files),
         )
+        md_file = project_md_files[int(md_file_i) - 1]
 
         with open(project_path / md_file, "r") as f:
             md_file_content = f.read()

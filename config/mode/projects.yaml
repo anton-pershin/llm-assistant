@@ -1,1 +1,4 @@
 _target_: llmass.modes.projects
+_partial_: true
+_args_:
+  - ${student_project_path} # project_path
