@@ -38,7 +38,7 @@ def projects(project_path: str, cfg: DictConfig) -> None:
     excluded_filenames = (
         "definitions.md",
     )
-    project_path = Path(cfg.student_project_path)
+    project_path = Path(project_path)
     project_md_files = get_markdown_filenames(p=project_path, excluded_filenames=excluded_filenames)
 
     print("===="*8)
