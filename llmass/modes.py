@@ -1,5 +1,8 @@
 from pathlib import Path
+
 from omegaconf import DictConfig
+import feedparser
+from tqdm import tqdm
 
 from llmass.interaction import (
     single_message_non_dialogue_interaction_with_llm,
@@ -9,6 +12,8 @@ from llmass.utils.common import (
     get_markdown_filenames,
     transform_filename_to_capitalized_name,
     prompt_until_satisfied,
+    print_llm_output,
+    to_boolean,
 )
 
 
@@ -72,6 +77,37 @@ def projects(project_path: str, cfg: DictConfig) -> None:
                 stop_word=cfg.stop_word,
             )
 
+
+def recent_papers(rss_feed_urls: list[str], output_filename: str, cfg: DictConfig) -> None:
+    md_buf = ""
+    for rss_i, rss_url in enumerate(rss_feed_urls):
+        feed = feedparser.parse(rss_url)
+        if feed.status != 200:
+            raise ValueError("Cannot get RSS feed, code: {feed.status}")
+
+        for entry in tqdm(feed.entries, desc=f"RSS feed {rss_i + 1}/{len(rss_feed_urls)}"):
+            title = entry.title
+            abstract = entry.description.split("\n")[1][10:]
+            llm_output = single_message_non_dialogue_interaction_with_llm(
+                llm_server_url=cfg.llm_server_url,
+                system_prompt=cfg.prompts.recent_papers.system_prompt, 
+                user_prompt_prefix=cfg.prompts.recent_papers.user_prompt_prefix,
+                user_prompt_question=cfg.prompts.recent_papers.user_prompt_question_at_startup,
+                user_prompt_suffix=cfg.prompts.recent_papers.user_prompt_suffix,
+                user_prompt_extra_content=f"Title: {title}" + "\n" + f"Abstract: {abstract}" + "\n",
+            )
+            relevant = to_boolean(llm_output)
+            if relevant:
+                md_buf += f"### {title}" 
+                md_buf += "\n\n" 
+                md_buf += f"**Link:** {entry.link}" 
+                md_buf += "\n\n" 
+                md_buf += f"**Abstract:** {abstract}"
+                md_buf += "\n\n" 
+    with open(output_filename, "w") as f:
+        f.write(md_buf)
+
+
 def _run_interaction_based_on_single_md_file(
     md_path: str,
     prompts: DictConfig,
@@ -82,15 +118,15 @@ def _run_interaction_based_on_single_md_file(
     with open(md_path, "r") as f:
         md_file_content = f.read()
         if ask_startup_question:
-            single_message_non_dialogue_interaction_with_llm(
+            llm_output = single_message_non_dialogue_interaction_with_llm(
                 llm_server_url=llm_server_url,
                 system_prompt=prompts.system_prompt, 
                 user_prompt_prefix=prompts.user_prompt_prefix,
                 user_prompt_question=prompts.user_prompt_question_at_startup,
                 user_prompt_suffix=prompts.user_prompt_suffix,
                 user_prompt_extra_content=md_file_content,
-                stop_word=stop_word,
             )
+            print_llm_output(llm_output)
 
         recurrent_non_dialogue_interaction_with_llm(
             llm_server_url=llm_server_url,

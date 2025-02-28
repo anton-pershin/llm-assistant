@@ -42,3 +42,20 @@ def prompt_until_satisfied(
             res = None
 
     return res
+
+
+def print_llm_output(llm_output: str) -> None:
+    print()
+    print(llm_output)
+    print()
+
+
+def to_boolean(llm_output: str) -> bool:
+    s = llm_output.lower()
+    if s.startswith("yes") or s.startswith("true"):
+        return True
+    elif s.startswith("no") or s.startswith("false"):
+        return False
+
+    raise ValueError(f"LLM output is inconsistent with the boolean type: '{s}'")
+ 
