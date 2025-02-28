@@ -1,0 +1,7 @@
+_target_: llmass.modes.recent_papers
+_partial_: true
+_args_:
+  - - "https://rss.arxiv.org/rss/cs.LG"  # list of RSS feeds
+    - "https://rss.arxiv.org/rss/cs.CL"
+    - "https://rss.arxiv.org/rss/cs.AI"
+  - ${now:%Y_%m_%d}_relevant_arxiv_papers.md  # output filename
