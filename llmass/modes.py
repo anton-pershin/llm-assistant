@@ -80,6 +80,7 @@ def projects(project_path: str, cfg: DictConfig) -> None:
 
 def recent_papers(rss_feed_urls: list[str], output_filename: str, cfg: DictConfig) -> None:
     md_buf = ""
+    already_processed_titles = set()
     for rss_i, rss_url in enumerate(rss_feed_urls):
         feed = feedparser.parse(rss_url)
         if feed.status != 200:
@@ -87,23 +88,26 @@ def recent_papers(rss_feed_urls: list[str], output_filename: str, cfg: DictConfi
 
         for entry in tqdm(feed.entries, desc=f"RSS feed {rss_i + 1}/{len(rss_feed_urls)}"):
             title = entry.title
-            abstract = entry.description.split("\n")[1][10:]
-            llm_output = single_message_non_dialogue_interaction_with_llm(
-                llm_server_url=cfg.llm_server_url,
-                system_prompt=cfg.prompts.recent_papers.system_prompt, 
-                user_prompt_prefix=cfg.prompts.recent_papers.user_prompt_prefix,
-                user_prompt_question=cfg.prompts.recent_papers.user_prompt_question_at_startup,
-                user_prompt_suffix=cfg.prompts.recent_papers.user_prompt_suffix,
-                user_prompt_extra_content=f"Title: {title}" + "\n" + f"Abstract: {abstract}" + "\n",
-            )
-            relevant = to_boolean(llm_output)
-            if relevant:
-                md_buf += f"### {title}" 
-                md_buf += "\n\n" 
-                md_buf += f"**Link:** {entry.link}" 
-                md_buf += "\n\n" 
-                md_buf += f"**Abstract:** {abstract}"
-                md_buf += "\n\n" 
+            if title not in already_processed_titles:
+                abstract = entry.description.split("\n")[1][10:]
+                llm_output = single_message_non_dialogue_interaction_with_llm(
+                    llm_server_url=cfg.llm_server_url,
+                    system_prompt=cfg.prompts.recent_papers.system_prompt, 
+                    user_prompt_prefix=cfg.prompts.recent_papers.user_prompt_prefix,
+                    user_prompt_question=cfg.prompts.recent_papers.user_prompt_question_at_startup,
+                    user_prompt_suffix=cfg.prompts.recent_papers.user_prompt_suffix,
+                    user_prompt_extra_content=f"Title: {title}" + "\n" + f"Abstract: {abstract}" + "\n",
+                )
+                relevant = to_boolean(llm_output)
+                if relevant:
+                    md_buf += f"### {title}" 
+                    md_buf += "\n\n" 
+                    md_buf += f"**Link:** {entry.link}" 
+                    md_buf += "\n\n" 
+                    md_buf += f"**Abstract:** {abstract}"
+                    md_buf += "\n\n" 
+                    already_processed_titles.add(title)
+                    
     with open(output_filename, "w") as f:
         f.write(md_buf)
 
