@@ -3,6 +3,7 @@ defaults:
   - user_settings: user_settings
   - hydra: base
   - prompts: base
+  - schemas: base
   - mode: warmup
 
 project_path: ${user_settings.project_path}
@@ -15,5 +16,6 @@ llm_server_url: ${user_settings.llm_server_url}
 student_project_path: ${user_settings.management_note_path}/university/student_projects
 routine_path: ${user_settings.management_note_path}/routines.md
 relax_path: ${user_settings.management_note_path}/relax.md
+study_path: ${user_settings.management_note_path}/study
 
 stop_word: stop

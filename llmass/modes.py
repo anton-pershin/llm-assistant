@@ -1,4 +1,5 @@
 from pathlib import Path
+import random
 
 from omegaconf import DictConfig
 import feedparser
@@ -15,6 +16,7 @@ from llmass.utils.common import (
     print_llm_output,
     to_boolean,
 )
+from llmass.utils.markdown import MdParser
 
 
 def warmup(cfg: DictConfig) -> None:
@@ -45,16 +47,7 @@ def projects(project_path: str, cfg: DictConfig) -> None:
     )
     project_path = Path(project_path)
     project_md_files = get_markdown_filenames(p=project_path, excluded_filenames=excluded_filenames)
-
-    print("===="*8)
-    print("Projects".upper())
-    print("===="*8 + "\n")
-
-    print("Project list:")
-    for i, md_file in enumerate(project_md_files):
-        student_name = transform_filename_to_capitalized_name(md_file)
-        print(f"\t{i + 1}  " + student_name + f" ({md_file})")
-    print()
+    _print_list_with_numeric_options(title="projects", files_or_dirs=project_md_files)
 
     while True:
         md_file_i = prompt_until_satisfied(
@@ -112,6 +105,63 @@ def recent_papers(rss_feed_urls: list[str], output_filename: str, cfg: DictConfi
         f.write(md_buf)
 
 
+def study(study_path: str, cfg: DictConfig) -> None:
+    # Collect all the subjects in the study dir
+    study_path = Path(study_path)
+    subjects = [d.name for d in study_path.iterdir() if d.is_dir()]
+    _print_list_with_numeric_options(title="study", files_or_dirs=subjects)
+
+    # Choose the subject
+    subject_i = prompt_until_satisfied(
+        prompt_msg="Choose the subject by its number",
+        input_prompt="> ",
+        msg_if_satisfied="Looking for the topics",
+        msg_if_not_satisfied="Wrong number. Try again",
+        condition=lambda i_as_str: 1 <= int(i_as_str) <= len(subjects),
+    )
+    subject = subjects[int(subject_i) - 1]
+
+    # Collect all the topics within the subject
+    excluded_filenames = (
+        "definitions.md",
+    )
+    subject_path = study_path / subject
+    topic_md_files = get_markdown_filenames(p=subject_path, excluded_filenames=excluded_filenames)
+    _print_list_with_numeric_options(title=subject, files_or_dirs=topic_md_files)
+
+    # Choose the topic
+    topic_i = prompt_until_satisfied(
+        prompt_msg="Choose the topic by its number",
+        input_prompt="> ",
+        msg_if_satisfied="Generating a random question",
+        msg_if_not_satisfied="Wrong number. Try again",
+        condition=lambda i_as_str: 1 <= int(i_as_str) <= len(topic_md_files),
+    )
+    topic_md_file = topic_md_files[int(topic_i) - 1]
+
+    # Parse the md file
+    parser = MdParser(subject_path / topic_md_file, cfg.schemas.study)
+    d = parser.parse()
+    
+    # Choose a subtopic randomly (some of them may be empty, skip them)
+    n_subtopics = len(d["current_state"])
+    subtopic = ""
+    while not subtopic:
+        i = random.randint(0, n_subtopics - 1)
+        subtopic = d["current_state"][i]["Topic"]
+
+    llm_output = single_message_non_dialogue_interaction_with_llm(
+        llm_server_url=cfg.llm_server_url,
+        system_prompt=cfg.prompts.study.system_prompt, 
+        user_prompt_prefix=cfg.prompts.study.user_prompt_prefix,
+        user_prompt_question=cfg.prompts.study.user_prompt_question_at_startup,
+        user_prompt_suffix=cfg.prompts.study.user_prompt_suffix,
+        user_prompt_extra_content=f"Предмет: {subject}" + "\n" + f"Раздел: {subtopic}" + "\n",
+    )
+
+    print(llm_output)
+    
+
 def _run_interaction_based_on_single_md_file(
     md_path: str,
     prompts: DictConfig,
@@ -141,3 +191,14 @@ def _run_interaction_based_on_single_md_file(
             stop_word=stop_word,
         )
 
+
+def _print_list_with_numeric_options(title: str, files_or_dirs: list[str]) -> None:
+    print("===="*8)
+    print(title.upper())
+    print("===="*8 + "\n")
+
+    print(f"{title.capitalize()} list:")
+    for i, file_or_dir in enumerate(files_or_dirs):
+        name = transform_filename_to_capitalized_name(file_or_dir)
+        print(f"\t{i + 1}  " + name + f" ({file_or_dir})")
+    print()

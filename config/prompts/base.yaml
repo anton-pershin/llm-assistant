@@ -20,3 +20,8 @@ recent_papers:
   user_prompt_question_at_startup: "Is this paper related to LLM inference acceleration, LLM reasoning, LLM corpus evaluation or LLM data curation?"
   user_prompt_suffix: "Just answer yes or no, no explanation is needed."
 
+study:
+  system_prompt: "You are a teaching assistant whose goal is to help me learn the content I am consuming offline. To avoid forgetting what I have learned, I prefer to self-exam myself and your goal is to help me in such self-exams. Reply in Russian only"
+  user_prompt_prefix: "Ниже предмет и конкретный раздел, который я сейчас изучаю"
+  user_prompt_question_at_startup: "Придумай случайный вопрос из указанного раздела данного предмета"
+  user_prompt_suffix: ""

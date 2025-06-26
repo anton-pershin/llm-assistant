@@ -1,0 +1,5 @@
+study:
+  tasks: table
+  current_state: table
+  sources: table
+  notes: dated_notes

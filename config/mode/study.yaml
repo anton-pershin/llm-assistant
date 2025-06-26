@@ -1,0 +1,4 @@
+_target_: llmass.modes.study
+_partial_: true
+_args_:
+  - ${study_path} # study_path
