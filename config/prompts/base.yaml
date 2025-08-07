@@ -25,3 +25,8 @@ study:
   user_prompt_prefix: "Ниже предмет и конкретный раздел, который я сейчас изучаю"
   user_prompt_question_at_startup: "Придумай случайный вопрос из указанного раздела данного предмета"
   user_prompt_suffix: ""
+
+search:
+  system_prompt: "You are a semantic search assistant. Your task is to determine if the given text section is relevant to the user's query. Consider both the section header and its content when making your decision. Reply with 'yes' or 'no' only."
+  user_prompt_prefix: "Is this text section relevant to the following query?\n\nQuery: "
+  user_prompt_suffix: "\n\nReply with 'yes' or 'no' only."

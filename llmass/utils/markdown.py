@@ -7,6 +7,7 @@ class MdParser:
     subparsers = {
         "table": "_parse_table",
         "dated_notes": "_parse_dated_notes",
+        "search": "_parse_for_search",
     }
 
     def __init__(
@@ -87,6 +88,35 @@ class MdParser:
 
         return res
 
+    def _parse_for_search(self, lines: list[str]) -> list[dict[str, str]]:
+        """Parse markdown content into sections by headers of any level."""
+        sections = []
+        current_header = None
+        current_content = []
+        
+        for line in lines:
+            header_level = get_header_level(line)
+            
+            if header_level > 0:  # This is a header
+                if current_header:  # Save previous section
+                    sections.append({
+                        "header": current_header,
+                        "content": "\n".join(current_content).strip()
+                    })
+                current_header = line.strip()
+                current_content = []
+            else:
+                current_content.append(line)
+        
+        # Add the last section
+        if current_header and current_content:
+            sections.append({
+                "header": current_header,
+                "content": "\n".join(current_content).strip()
+            })
+            
+        return sections
+
 
 def parse_name_from_header(
     raw_header: str,
@@ -107,4 +137,11 @@ def parse_values_from_table_row(raw_row: str) -> str:
 
 def starts_with_n_hashes_exactly(s: str, n: int) -> bool:
     return re.match(r"^\s*" + "#"*n + r"(?!\#)", s)
+
+def get_header_level(line: str) -> int:
+    """Return header level (1-3) or 0 if not a header"""
+    for i in range(1, 4):
+        if starts_with_n_hashes_exactly(line, i):
+            return i
+    return 0
 

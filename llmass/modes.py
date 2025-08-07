@@ -105,6 +105,59 @@ def recent_papers(rss_feed_urls: list[str], output_filename: str, cfg: DictConfi
         f.write(md_buf)
 
 
+def search(cfg: DictConfig) -> None:
+    management_note_path = cfg.management_note_path
+    # Get query from user
+    query = input("Enter your search query: ")
+    
+    # Get all markdown files recursively
+    management_note_path = Path(management_note_path)
+    excluded_filenames = ("definitions.md",)
+    md_files = []
+    for f in management_note_path.rglob("*.md"):
+        if f.name not in excluded_filenames:
+            md_files.append(str(f.relative_to(management_note_path)))
+    
+    results = []
+    for md_file in md_files:
+        # Read the file content directly
+        with open(management_note_path / md_file, "r") as f:
+            content = f.readlines()
+            # Parse sections using the search parser directly
+            sections = MdParser._parse_for_search(None, content)
+        
+        for section in sections:
+            # Ask LLM if this section is relevant to the query
+            llm_output = single_message_non_dialogue_interaction_with_llm(
+                llm_server_url=cfg.llm_server_url,
+                system_prompt=cfg.prompts.search.system_prompt,
+                user_prompt_prefix=cfg.prompts.search.user_prompt_prefix,
+                user_prompt_question=query,
+                user_prompt_suffix=cfg.prompts.search.user_prompt_suffix,
+                user_prompt_extra_content=f"{section['header']}\n\n{section['content']}",
+            )
+            
+            is_relevant = to_boolean(llm_output)
+            if is_relevant:
+                results.append({
+                    "file": md_file,
+                    "header": section["header"],
+                    "content": section["content"],
+                })
+    
+    # Display results
+    if results:
+        print("\nRelevant sections found:")
+        print("===="*8)
+        for result in results:
+            print(f"\nFile: {result['file']}")
+            print(f"Section: {result['header']}")
+            print(f"Content:\n{result['content']}")
+            print("-"*32)
+        print("\n" + "===="*8)
+    else:
+        print("\nNo relevant content found.")
+
 def study(study_path: str, cfg: DictConfig) -> None:
     # Collect all the subjects in the study dir
     study_path = Path(study_path)
