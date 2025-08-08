@@ -1,5 +1,8 @@
 from pathlib import Path
 from collections.abc import Callable
+from rich.panel import Panel
+
+from llmass.utils.console import console
 
 
 def get_project_path() -> Path:
@@ -32,22 +35,22 @@ def prompt_until_satisfied(
 ) -> str:
     res = None
     while res is None:
-        print(prompt_msg)
-        res = input(input_prompt)
+        console.print(prompt_msg, style="green")
+        res = console.input(f"[green]{input_prompt}[/green]")
         if condition(res):
-            print(msg_if_satisfied)
-            print()
+            console.print(msg_if_satisfied, style="green")
+            console.print()
         else:
-            print(msg_if_not_satisfied)
+            console.print(msg_if_not_satisfied, style="green")
             res = None
 
     return res
 
 
 def print_llm_output(llm_output: str) -> None:
-    print()
-    print(llm_output)
-    print()
+    console.print()
+    console.print(Panel(llm_output, border_style="green"))
+    console.print()
 
 
 def to_boolean(llm_output: str) -> bool:

@@ -2,6 +2,7 @@ import requests
 import json
 
 from llmass.utils.common import print_llm_output
+from llmass.utils.console import console, prompt_user
 
 
 def compose_user_prompt(
@@ -59,7 +60,7 @@ def recurrent_non_dialogue_interaction_with_llm(
     stop_word: str = "stop",
 ) -> None:
     while True:
-        q = input("> ")
+        q = prompt_user()
         if q == stop_word:
             break
 

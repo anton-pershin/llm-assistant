@@ -1,9 +1,15 @@
 from pathlib import Path
 import random
+from typing import Optional
 
 from omegaconf import DictConfig
 import feedparser
-from tqdm import tqdm
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+from rich.progress import track
+
+from llmass.utils.console import console, prompt_user
 
 from llmass.interaction import (
     single_message_non_dialogue_interaction_with_llm,
@@ -20,6 +26,7 @@ from llmass.utils.markdown import MdParser
 
 
 def warmup(cfg: DictConfig) -> None:
+    _print_mode_title(warmup.__name__)
     _run_interaction_based_on_single_md_file(
         md_path=cfg.routine_path,
         prompts=cfg.prompts.warmup,
@@ -30,6 +37,7 @@ def warmup(cfg: DictConfig) -> None:
 
 
 def relax(cfg: DictConfig) -> None:
+    _print_mode_title(relax.__name__)
     _run_interaction_based_on_single_md_file(
         md_path=cfg.relax_path,
         prompts=cfg.prompts.relax,
@@ -40,6 +48,7 @@ def relax(cfg: DictConfig) -> None:
 
 
 def projects(project_path: str, cfg: DictConfig) -> None:
+    _print_mode_title(projects.__name__)
     # Collect all the project files in the project dir
     project_md_files = []
     excluded_filenames = (
@@ -72,14 +81,15 @@ def projects(project_path: str, cfg: DictConfig) -> None:
 
 
 def recent_papers(rss_feed_urls: list[str], output_filename: str, cfg: DictConfig) -> None:
+    _print_mode_title(recent_papers.__name__)
     md_buf = ""
     already_processed_titles = set()
-    for rss_i, rss_url in enumerate(rss_feed_urls):
-        feed = feedparser.parse(rss_url)
+    for rss_i, rss_feed in enumerate(rss_feed_urls):
+        feed = feedparser.parse(rss_feed["url"])
         if feed.status != 200:
             raise ValueError("Cannot get RSS feed, code: {feed.status}")
 
-        for entry in tqdm(feed.entries, desc=f"RSS feed {rss_i + 1}/{len(rss_feed_urls)}"):
+        for entry in track(feed.entries, description=f"RSS feed {rss_i + 1}/{len(rss_feed_urls)}: {rss_feed['name']}"):
             title = entry.title
             if title not in already_processed_titles:
                 abstract = entry.description.split("\n")[1][10:]
@@ -106,17 +116,20 @@ def recent_papers(rss_feed_urls: list[str], output_filename: str, cfg: DictConfi
 
 
 def search(cfg: DictConfig) -> None:
+    _print_mode_title(search.__name__)
     # First, let user choose the collection
     collections = list(cfg.markdown_collections.keys())
     _print_list_with_numeric_options(
         title="collections", 
-        files_or_dirs=[f"{k} - {cfg.markdown_collections[k].description}" for k in collections]
+        files_or_dirs=[cfg.markdown_collections[name].path for name in collections],
+        names=[name for name in collections],
+        descriptions=[cfg.markdown_collections[name].description for name in collections],
     )
     
     collection_i = prompt_until_satisfied(
         prompt_msg="Choose collection to search in by its number",
         input_prompt="> ",
-        msg_if_satisfied="Selected collection",
+        msg_if_satisfied="Good choice, buddy!",
         msg_if_not_satisfied="Wrong number. Try again",
         condition=lambda i_as_str: 1 <= int(i_as_str) <= len(collections),
     )
@@ -124,7 +137,8 @@ def search(cfg: DictConfig) -> None:
     collection_path = Path(cfg.markdown_collections[selected_collection].path)
 
     # Get query from user
-    query = input("Enter your search query: ")
+    console.print("[green]Enter your search query:[/green]")
+    query = prompt_user()
     
     # Get all markdown files recursively from selected collection
     excluded_filenames = ("definitions.md",)
@@ -134,7 +148,7 @@ def search(cfg: DictConfig) -> None:
             md_files.append(str(f.relative_to(collection_path)))
     
     results = []
-    for md_file in md_files:
+    for md_file in track(md_files, description="Searching through files"):
         # Read the file content directly
         with open(collection_path / md_file, "r") as f:
             content = f.readlines()
@@ -162,18 +176,25 @@ def search(cfg: DictConfig) -> None:
     
     # Display results
     if results:
-        print("\nRelevant sections found:")
-        print("===="*8)
+        console.print("\n[bold blue]Relevant sections found:[/bold blue]")
+        console.rule(style="blue")
+        
         for result in results:
-            print(f"\nFile: {result['file']}")
-            print(f"Section: {result['header']}")
-            print(f"Content:\n{result['content']}")
-            print("-"*32)
-        print("\n" + "===="*8)
+            title = Text(f"📄 {result['file']} → {result['header']}", style="yellow bold")
+            content = Text(result['content'])
+            panel = Panel(
+                content,
+                title=title,
+                border_style="blue",
+                padding=(1, 2)
+            )
+            console.print(panel)
+            console.print()
     else:
-        print("\nNo relevant content found.")
+        console.print("\n[bold red]No relevant content found.[/bold red]")
 
 def study(study_path: str, cfg: DictConfig) -> None:
+    _print_mode_title(study.__name__)
     # Collect all the subjects in the study dir
     study_path = Path(study_path)
     subjects = [d.name for d in study_path.iterdir() if d.is_dir()]
@@ -227,7 +248,7 @@ def study(study_path: str, cfg: DictConfig) -> None:
         user_prompt_extra_content=f"Предмет: {subject}" + "\n" + f"Раздел: {subtopic}" + "\n",
     )
 
-    print(llm_output)
+    print_llm_output(llm_output)
     
 
 def _run_interaction_based_on_single_md_file(
@@ -260,13 +281,43 @@ def _run_interaction_based_on_single_md_file(
         )
 
 
-def _print_list_with_numeric_options(title: str, files_or_dirs: list[str]) -> None:
-    print("===="*8)
-    print(title.upper())
-    print("===="*8 + "\n")
+def _print_mode_title(mode_func_name: str) -> None:
+    mode_name = mode_func_name.replace('_', ' ').upper() + " MODE"
 
-    print(f"{title.capitalize()} list:")
+    console.print()
+    console.print(f"[bold blue on grey74]{mode_name:^{console.width}}[/bold blue on grey74]")
+    console.print()
+
+
+def _print_list_with_numeric_options(
+    title: str,
+    files_or_dirs: list[str],
+    names: Optional[list[str]] = None,
+    descriptions: Optional[list[str]] = None,
+) -> None:
+    console.rule(f"[bold blue]{title.upper()}[/bold blue]", style="blue")
+    
+    table = Table(show_header=False, box=None, padding=(0, 2))
     for i, file_or_dir in enumerate(files_or_dirs):
-        name = transform_filename_to_capitalized_name(file_or_dir)
-        print(f"\t{i + 1}  " + name + f" ({file_or_dir})")
-    print()
+        if names is not None:
+            name = names[i]
+        else:
+            name = transform_filename_to_capitalized_name(file_or_dir)
+
+        if descriptions is not None:
+            descr = descriptions[i]
+
+            table.add_row(
+                f"[cyan]{i + 1}[/cyan]",
+                Text(f"{name} - {descr}", style="green"),
+                f"[dim]({file_or_dir})[/dim]"
+            )
+        else:
+            table.add_row(
+                f"[cyan]{i + 1}[/cyan]",
+                Text(name, style="green"),
+                f"[dim]({file_or_dir})[/dim]"
+            )
+
+    console.print(table)
+    console.print()

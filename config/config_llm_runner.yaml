@@ -15,8 +15,8 @@ markdown_collections: ${user_settings.markdown_collections}
 llm_server_url: ${user_settings.llm_server_url}
 
 student_project_path: ${management_note_path}/university/student_projects
-routine_path: ${user_settings.management_note_path}/routines.md
-relax_path: ${user_settings.management_note_path}/relax.md
-study_path: ${user_settings.management_note_path}/study
+routine_path: ${management_note_path}/routines.md
+relax_path: ${management_note_path}/relax.md
+study_path: ${management_note_path}/study
 
 stop_word: stop
