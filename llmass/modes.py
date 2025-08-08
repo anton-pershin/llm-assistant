@@ -106,22 +106,37 @@ def recent_papers(rss_feed_urls: list[str], output_filename: str, cfg: DictConfi
 
 
 def search(cfg: DictConfig) -> None:
-    management_note_path = cfg.management_note_path
+    # First, let user choose the collection
+    collections = list(cfg.markdown_collections.keys())
+    _print_list_with_numeric_options(
+        title="collections", 
+        files_or_dirs=[f"{k} - {cfg.markdown_collections[k].description}" for k in collections]
+    )
+    
+    collection_i = prompt_until_satisfied(
+        prompt_msg="Choose collection to search in by its number",
+        input_prompt="> ",
+        msg_if_satisfied="Selected collection",
+        msg_if_not_satisfied="Wrong number. Try again",
+        condition=lambda i_as_str: 1 <= int(i_as_str) <= len(collections),
+    )
+    selected_collection = collections[int(collection_i) - 1]
+    collection_path = Path(cfg.markdown_collections[selected_collection].path)
+
     # Get query from user
     query = input("Enter your search query: ")
     
-    # Get all markdown files recursively
-    management_note_path = Path(management_note_path)
+    # Get all markdown files recursively from selected collection
     excluded_filenames = ("definitions.md",)
     md_files = []
-    for f in management_note_path.rglob("*.md"):
+    for f in collection_path.rglob("*.md"):
         if f.name not in excluded_filenames:
-            md_files.append(str(f.relative_to(management_note_path)))
+            md_files.append(str(f.relative_to(collection_path)))
     
     results = []
     for md_file in md_files:
         # Read the file content directly
-        with open(management_note_path / md_file, "r") as f:
+        with open(collection_path / md_file, "r") as f:
             content = f.readlines()
             # Parse sections using the search parser directly
             sections = MdParser._parse_for_search(None, content)

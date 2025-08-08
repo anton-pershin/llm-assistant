@@ -10,10 +10,11 @@ project_path: ${user_settings.project_path}
 result_dir: ${user_settings.hydra_dir}
 hydra_root: ${user_settings.hydra_root}
 hydra_dir: ${user_settings.hydra_dir}
-management_note_path: ${user_settings.management_note_path}
+management_note_path: ${user_settings.markdown_collections.management.path}
+markdown_collections: ${user_settings.markdown_collections}
 llm_server_url: ${user_settings.llm_server_url}
 
-student_project_path: ${user_settings.management_note_path}/university/student_projects
+student_project_path: ${management_note_path}/university/student_projects
 routine_path: ${user_settings.management_note_path}/routines.md
 relax_path: ${user_settings.management_note_path}/relax.md
 study_path: ${user_settings.management_note_path}/study
